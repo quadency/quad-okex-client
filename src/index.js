@@ -1,6 +1,7 @@
-const clients = {
-  restClient: require('./okex-api.js'),
-  wsClient: require('./okex-api-ws.js'),
-}
+import OkexClient from "./okex-api";
+import OkexWebsocketClient from "./okex-api-ws";
 
-module.exports = clients;
+module.exports = {
+  RestClient: OkexClient,
+  WebsocketClient: OkexWebsocketClient,
+}

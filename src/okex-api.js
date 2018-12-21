@@ -13,7 +13,7 @@ const ORDERS = '/api/spot/v3/orders';
 const CANCEL_ORDERS = '/api/spot/v3/cancel_orders';
 const TRANSACTION_DETAILS = '/api/spot/v3/fills';
 
-export class OkexClient {
+class OkexClient {
   constructor(userConfig = {}) {
     Object.keys(userConfig).forEach((key) => {
       this[key] = userConfig[key];
@@ -318,3 +318,5 @@ export class OkexClient {
     return { result: false };
   }
 }
+
+export default OkexClient;

@@ -9,7 +9,7 @@ const EXCHANGE = 'OKEX';
 
 
 
-export class OkexWebsocketClient {
+class OkexWebsocketClient {
   constructor(correlationId, userConfig = {}) {
     Object.keys(userConfig).forEach((key) => {
       this[key] = userConfig[key];
@@ -190,3 +190,5 @@ export class OkexWebsocketClient {
     });
   }
 }
+
+export default OkexWebsocketClient;

@@ -3,7 +3,6 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.OkexWebsocketClient = undefined;
 
 var _ws = require('ws');
 
@@ -207,4 +206,5 @@ class OkexWebsocketClient {
     });
   }
 }
-exports.OkexWebsocketClient = OkexWebsocketClient;
+
+exports.default = OkexWebsocketClient;

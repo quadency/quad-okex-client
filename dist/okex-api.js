@@ -3,7 +3,6 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.OkexClient = undefined;
 
 var _axios = require('axios');
 
@@ -382,4 +381,5 @@ class OkexClient {
     })();
   }
 }
-exports.OkexClient = OkexClient;
+
+exports.default = OkexClient;

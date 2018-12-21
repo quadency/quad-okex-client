@@ -1,12 +1,11 @@
 import WebSocket from 'ws';
 import pako from 'pako';
 import CryptoJS from 'crypto-js';
-import { COMMON_CURRENCIES } from "./utils";
+import { COMMON_CURRENCIES } from './utils';
 
 
 const WEBSOCKET_URI = 'wss://real.okex.com:10441/websocket';
 const EXCHANGE = 'OKEX';
-
 
 
 class OkexWebsocketClient {
@@ -80,7 +79,16 @@ class OkexWebsocketClient {
 
     socket.onopen = () => {
       console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} connection open`);
-      this.login(socket);
+
+      if (this.apiKey) {
+        this.login(socket);
+      } else if (Array.isArray(subscription)) {
+        subscription.forEach((sub) => {
+          socket.send(JSON.stringify(sub));
+        });
+      } else {
+        socket.send(JSON.stringify(subscription));
+      }
 
       pingInterval = setInterval(() => {
         if (socket.readyState === socket.OPEN) {
@@ -186,6 +194,46 @@ class OkexWebsocketClient {
           const callbackPayload = OkexWebsocketClient.updateBalanceCurrencies(payloadObj.data.info);
           callback(callbackPayload);
         }
+      }
+    });
+  }
+
+  static updateTickerCurrencies(tick) {
+    const updatedTick = tick;
+    const [base, quote] = tick.symbol.split('_');
+
+    const newBase = COMMON_CURRENCIES[base] ? COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
+    const newQuote = COMMON_CURRENCIES[quote] ? COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
+    const newSymbol = `${newBase}-${newQuote}`;
+    updatedTick.symbol = newSymbol;
+    return updatedTick;
+  }
+
+  subscribeTickers(productIds, callback) {
+    if (!productIds.length) {
+      throw new Error('must provide product ids');
+    }
+
+    const subscriptions = productIds.map((productId) => {
+      const [base, quote] = productId.split('-');
+      return {
+        event: 'addChannel',
+        parameters: {
+          base, binary: '1', product: 'spot', quote, type: 'ticker',
+        },
+      };
+    });
+    return this.subscribe(subscriptions, (payloadObj) => {
+      const { channel, type, data } = payloadObj;
+      if (channel === 'addChannel') {
+        if (data.result) {
+          console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} user subscribed to ticker base=${payloadObj.base} quote=${payloadObj.quote}`);
+        }
+        return;
+      }
+      if (type === 'ticker') {
+        const callbackPayload = OkexWebsocketClient.updateTickerCurrencies(data);
+        callback(callbackPayload);
       }
     });
   }

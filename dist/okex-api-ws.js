@@ -148,12 +148,14 @@ class OkexWebsocketClient {
       // reconnect if error
       this.subscribe(subscription, callback);
     };
-    return socket;
+    return () => {
+      socket.close();
+    };
   }
 
   subscribeAllSpots(callback) {
     const subscription = { event: 'addChannel', parameters: { binary: '1', type: 'spot_order_all' } };
-    const socket = this.subscribe(subscription, payloadObj => {
+    return this.subscribe(subscription, payloadObj => {
       const { channel, type, data } = payloadObj;
 
       if (channel === 'addChannel') {
@@ -171,9 +173,6 @@ class OkexWebsocketClient {
         callback(callbackPayload);
       }
     });
-    return () => {
-      socket.close();
-    };
   }
 
   static updateBalanceCurrencies(balance) {
@@ -198,7 +197,7 @@ class OkexWebsocketClient {
 
   subscribeBalance(callback) {
     const subscription = { event: 'addChannel', parameters: { binary: '1', type: 'spot_order_all' } };
-    const socket = this.subscribe(subscription, payloadObj => {
+    return this.subscribe(subscription, payloadObj => {
       const { channel, data } = payloadObj;
       if (channel) {
         if (channel === 'addChannel') {
@@ -214,9 +213,6 @@ class OkexWebsocketClient {
         }
       }
     });
-    return () => {
-      socket.close();
-    };
   }
 
   static updateTickerCurrencies(tick) {
@@ -244,7 +240,7 @@ class OkexWebsocketClient {
         }
       };
     });
-    const socket = this.subscribe(subscriptions, payloadObj => {
+    return this.subscribe(subscriptions, payloadObj => {
       const { channel, type, data } = payloadObj;
       if (channel === 'addChannel') {
         if (data.result) {
@@ -257,9 +253,6 @@ class OkexWebsocketClient {
         callback(callbackPayload);
       }
     });
-    return () => {
-      socket.close();
-    };
   }
 }
 

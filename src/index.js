@@ -1,2 +1,4 @@
-exports.OkexClient = require('./okex-api');
-exports.OkexWebsocketClient = require('./okex-api-ws');
+module.exports = exports = {
+  restClient: require('./okex-api'),
+  wsClient: require('./okex-api-ws'),
+}

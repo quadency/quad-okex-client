@@ -1,0 +1,20 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dist directory
+tmp/
+
+# Dependency directories
+node_modules
+
+# Serverless staff
+.serverless
+.webpack
+
+# OSX
+.DS_Store
+.idea
+# ENV var
+.env

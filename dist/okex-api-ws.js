@@ -226,13 +226,13 @@ class OkexWebsocketClient {
     return updatedTick;
   }
 
-  subscribeTickers(productIds, callback) {
-    if (!productIds.length) {
-      throw new Error('must provide product ids');
+  subscribeTickers(instrumentIds, callback) {
+    if (!instrumentIds.length) {
+      throw new Error('must provide instrument ids');
     }
 
-    const subscriptions = productIds.map(productId => {
-      const [base, quote] = productId.split('-');
+    const subscriptions = instrumentIds.map(instrumentId => {
+      const [base, quote] = instrumentId.split('-');
       return {
         event: 'addChannel',
         parameters: {
@@ -244,12 +244,51 @@ class OkexWebsocketClient {
       const { channel, type, data } = payloadObj;
       if (channel === 'addChannel') {
         if (data.result) {
-          console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} user subscribed to ticker base=${payloadObj.base} quote=${payloadObj.quote}`);
+          console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ticker base=${payloadObj.base} quote=${payloadObj.quote}`);
         }
         return;
       }
       if (type === 'ticker') {
         const callbackPayload = OkexWebsocketClient.updateTickerCurrencies(data);
+        callback(callbackPayload);
+      }
+    });
+  }
+
+  subscribeDepths(instrumentIds, callback) {
+    if (!instrumentIds.length) {
+      throw new Error('must provide instrument ids');
+    }
+    const subscriptions = instrumentIds.map(instrumentId => {
+      const [base, quote] = instrumentId.split('-');
+      return {
+        event: 'addChannel',
+        parameters: {
+          base, binary: '1', product: 'spot', quote, type: 'depth'
+        }
+      };
+    });
+    return this.subscribe(subscriptions, payloadObj => {
+      const { channel, type, data } = payloadObj;
+
+      if (channel === 'addChannel') {
+        if (data.result) {
+          console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to order depth base=${payloadObj.base} quote=${payloadObj.quote}`);
+        }
+        return;
+      }
+
+      if (type === 'depth') {
+        const { base, quote } = payloadObj;
+        const newBase = _utils.COMMON_CURRENCIES[base] ? _utils.COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
+        const newQuote = _utils.COMMON_CURRENCIES[quote] ? _utils.COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
+        const symbol = `${newBase}-${newQuote}`;
+        if (data.init) {
+          const callbackPayload = Object.assign({ symbol, type: 'SNAPSHOT' }, data);
+          callback(callbackPayload);
+          return;
+        }
+        const callbackPayload = Object.assign({ symbol, type: 'DELTA' }, data);
         callback(callbackPayload);
       }
     });

@@ -283,12 +283,8 @@ class OkexWebsocketClient {
         const newBase = _utils.COMMON_CURRENCIES[base] ? _utils.COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
         const newQuote = _utils.COMMON_CURRENCIES[quote] ? _utils.COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
         const symbol = `${newBase}-${newQuote}`;
-        if (data.init) {
-          const callbackPayload = Object.assign({ symbol, type: 'SNAPSHOT' }, data);
-          callback(callbackPayload);
-          return;
-        }
-        const callbackPayload = Object.assign({ symbol, type: 'DELTA' }, data);
+        const callbackPayload = Object.assign({ symbol }, data);
+        callbackPayload.type = data.init ? 'SNAPSHOT' : 'DELTA';
         callback(callbackPayload);
       }
     });

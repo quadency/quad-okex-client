@@ -19,7 +19,7 @@ const exchangeClient = new okex.RestClient({
 
 // if using a proxy, set proxy value
 if (PROXY_HOST) {
-  exchangeClient.proxy = await getResolvedProxy();
+  exchangeClient.proxy = 'http://yourproxyhost';
 }
 const allMyOrderForBTCUSDT = await exchangeClient.fetchOrders('BTC-USDT')
 

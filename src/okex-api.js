@@ -317,6 +317,32 @@ class OkexClient {
     console.error(`Status=${response.status} cancelling order from ${EXCHANGE} because:`, response.data);
     return { result: false };
   }
+
+  async fetchOHLCV(instrumentId, interval, start, end) {
+    const options = {
+      method: 'GET',
+      url: `${this.proxy}${BASE_URL}${INSTRUMENTS}/${instrumentId}/candles`,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      params: {
+        start,
+        end,
+        granularity: interval,
+      },
+    };
+
+    try {
+      const response = await axios(options);
+      if (response.status === 200) {
+        return response.data;
+      }
+      console.error(`Status=${response.status} fetching instruments from ${EXCHANGE} because:`, response.data);
+    } catch (err) {
+      console.error(`Error fetching instruments from ${EXCHANGE} because:`, err);
+    }
+    return [];
+  }
 }
 
 export default OkexClient;

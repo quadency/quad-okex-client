@@ -380,6 +380,36 @@ class OkexClient {
       return { result: false };
     })();
   }
+
+  fetchOHLCV(instrumentId, interval, start, end) {
+    var _this12 = this;
+
+    return _asyncToGenerator(function* () {
+      const options = {
+        method: 'GET',
+        url: `${_this12.proxy}${BASE_URL}${INSTRUMENTS}/${instrumentId}/candles`,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        params: {
+          start,
+          end,
+          granularity: interval
+        }
+      };
+
+      try {
+        const response = yield (0, _axios2.default)(options);
+        if (response.status === 200) {
+          return response.data;
+        }
+        console.error(`Status=${response.status} fetching instruments from ${EXCHANGE} because:`, response.data);
+      } catch (err) {
+        console.error(`Error fetching instruments from ${EXCHANGE} because:`, err);
+      }
+      return [];
+    })();
+  }
 }
 
 exports.default = OkexClient;

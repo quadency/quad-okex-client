@@ -63,9 +63,9 @@ class OkexWebsocketClient {
 
   static getOrderSide(side) {
     if (side === 2) {
-      return 'BUY';
+      return 'SELL';
     }
-    return 'SELL';
+    return 'BUY';
   }
 
   login(socket) {
@@ -286,6 +286,44 @@ class OkexWebsocketClient {
         const callbackPayload = Object.assign({ symbol }, data);
         callbackPayload.type = data.init ? 'SNAPSHOT' : 'DELTA';
         callback(callbackPayload);
+      }
+    });
+  }
+
+  subscribeTrades(instrumentIds, callback) {
+    if (!instrumentIds.length) {
+      throw new Error('must provide instrument ids');
+    }
+    const subscriptions = instrumentIds.map(instrumentId => {
+      const [base, quote] = instrumentId.split('-');
+      return {
+        event: 'addChannel',
+        parameters: {
+          base, binary: '1', product: 'spot', quote, type: 'deal'
+        }
+      };
+    });
+    return this.subscribe(subscriptions, payloadObj => {
+      const { channel, type, data } = payloadObj;
+
+      if (channel === 'addChannel') {
+        if (data.result) {
+          console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to trades base=${payloadObj.base} quote=${payloadObj.quote}`);
+        }
+        return;
+      }
+
+      if (type === 'deal') {
+        const { base, quote } = payloadObj;
+        const newBase = _utils.COMMON_CURRENCIES[base] ? _utils.COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
+        const newQuote = _utils.COMMON_CURRENCIES[quote] ? _utils.COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
+        const symbol = `${newBase}-${newQuote}`;
+
+        data.forEach(trade => {
+          const callbackPayload = Object.assign({ symbol }, trade);
+          callbackPayload.side = OkexWebsocketClient.getOrderSide(trade.side);
+          callback(callbackPayload);
+        });
       }
     });
   }

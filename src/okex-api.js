@@ -204,12 +204,20 @@ class OkexClient {
   async fetchMyTrades(instrumentId) {
     let userTransactions = [];
     const filledOrders = await this.fetchOrders(instrumentId, ['filled']);
+
+    const orderSideMap = {};
+    filledOrders.forEach((order) => {
+      orderSideMap[order.order_id] = order.side;
+    });
     const orderIds = filledOrders.map(order => order.order_id);
 
     // eslint-disable-next-line no-restricted-syntax
     for (const orderId of orderIds) {
       // eslint-disable-next-line no-await-in-loop
-      const transactions = await this.fetchTransactionDetails(instrumentId, orderId);
+      const rawTransactions = await this.fetchTransactionDetails(instrumentId, orderId);
+
+      // we only want transactions on the same side order was made rather than all transactions
+      const transactions = rawTransactions.filter(transaction => orderSideMap[transaction.order_id] === transaction.side);
       userTransactions = userTransactions.concat(transactions);
       delay(this.RATE_LIMIT);
     }

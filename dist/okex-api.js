@@ -247,6 +247,11 @@ class OkexClient {
     return _asyncToGenerator(function* () {
       let userTransactions = [];
       const filledOrders = yield _this7.fetchOrders(instrumentId, ['filled']);
+
+      const orderSideMap = {};
+      filledOrders.forEach(function (order) {
+        orderSideMap[order.order_id] = order.side;
+      });
       const orderIds = filledOrders.map(function (order) {
         return order.order_id;
       });
@@ -254,7 +259,12 @@ class OkexClient {
       // eslint-disable-next-line no-restricted-syntax
       for (const orderId of orderIds) {
         // eslint-disable-next-line no-await-in-loop
-        const transactions = yield _this7.fetchTransactionDetails(instrumentId, orderId);
+        const rawTransactions = yield _this7.fetchTransactionDetails(instrumentId, orderId);
+
+        // we only want transactions on the same side order was made rather than all transactions
+        const transactions = rawTransactions.filter(function (transaction) {
+          return orderSideMap[transaction.order_id] === transaction.side;
+        });
         userTransactions = userTransactions.concat(transactions);
         (0, _utils.delay)(_this7.RATE_LIMIT);
       }

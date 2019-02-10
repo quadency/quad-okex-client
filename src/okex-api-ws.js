@@ -107,7 +107,9 @@ class OkexWebsocketClient {
           payloadObj.forEach((msg) => {
             if (msg.channel === 'login' && msg.data.result) {
               console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} user logged in`);
-              socket.send(JSON.stringify(subscription));
+              if (socket.readyState === socket.OPEN) {
+                socket.send(JSON.stringify(subscription));
+              }
               return;
             }
             callback(msg);

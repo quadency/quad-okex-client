@@ -170,6 +170,36 @@ class OkexClient {
     return [];
   }
 
+  async fetchOrder(orderId, instrumentId) {
+    const timestamp = (Date.now() / 1000).toString();
+    const method = 'GET';
+    const path = `${ORDERS}/${orderId}?instrument_id=${instrumentId}`;
+    const sign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(`${timestamp}${method}${path}`, this.secret));
+
+    const options = {
+      method,
+      url: `${this.proxy}${BASE_URL}${path}`,
+      headers: {
+        'OK-ACCESS-KEY': this.apiKey,
+        'OK-ACCESS-SIGN': sign,
+        'OK-ACCESS-TIMESTAMP': timestamp,
+        'OK-ACCESS-PASSPHRASE': this.password,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    try {
+      const response = await axios(options);
+      if (response.status === 200) {
+        return response.data;
+      }
+      console.error(`Status=${response.status} fetching users trades from ${EXCHANGE} because:`, response.data);
+    } catch (err) {
+      console.error(`Error fetching users trades from ${EXCHANGE} because:`, err);
+    }
+    return [];
+  }
+
   async fetchTransactionDetails(instrumentId, orderId) {
     const timestamp = (Date.now() / 1000).toString();
     const method = 'GET';

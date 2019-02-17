@@ -206,13 +206,13 @@ class OkexClient {
     })();
   }
 
-  fetchTransactionDetails(instrumentId, orderId) {
+  fetchOrder(orderId, instrumentId) {
     var _this6 = this;
 
     return _asyncToGenerator(function* () {
       const timestamp = (Date.now() / 1000).toString();
       const method = 'GET';
-      const path = `${TRANSACTION_DETAILS}?order_id=${orderId}&instrument_id=${instrumentId}`;
+      const path = `${ORDERS}/${orderId}?instrument_id=${instrumentId}`;
       const sign = _cryptoJs2.default.enc.Base64.stringify(_cryptoJs2.default.HmacSHA256(`${timestamp}${method}${path}`, _this6.secret));
 
       const options = {
@@ -240,13 +240,47 @@ class OkexClient {
     })();
   }
 
-  // get filled orders and then get all transactions
-  fetchMyTrades(instrumentId) {
+  fetchTransactionDetails(instrumentId, orderId) {
     var _this7 = this;
 
     return _asyncToGenerator(function* () {
+      const timestamp = (Date.now() / 1000).toString();
+      const method = 'GET';
+      const path = `${TRANSACTION_DETAILS}?order_id=${orderId}&instrument_id=${instrumentId}`;
+      const sign = _cryptoJs2.default.enc.Base64.stringify(_cryptoJs2.default.HmacSHA256(`${timestamp}${method}${path}`, _this7.secret));
+
+      const options = {
+        method,
+        url: `${_this7.proxy}${BASE_URL}${path}`,
+        headers: {
+          'OK-ACCESS-KEY': _this7.apiKey,
+          'OK-ACCESS-SIGN': sign,
+          'OK-ACCESS-TIMESTAMP': timestamp,
+          'OK-ACCESS-PASSPHRASE': _this7.password,
+          'Content-Type': 'application/json'
+        }
+      };
+
+      try {
+        const response = yield (0, _axios2.default)(options);
+        if (response.status === 200) {
+          return response.data;
+        }
+        console.error(`Status=${response.status} fetching users trades from ${EXCHANGE} because:`, response.data);
+      } catch (err) {
+        console.error(`Error fetching users trades from ${EXCHANGE} because:`, err);
+      }
+      return [];
+    })();
+  }
+
+  // get filled orders and then get all transactions
+  fetchMyTrades(instrumentId) {
+    var _this8 = this;
+
+    return _asyncToGenerator(function* () {
       let userTransactions = [];
-      const filledOrders = yield _this7.fetchOrders(instrumentId, ['filled']);
+      const filledOrders = yield _this8.fetchOrders(instrumentId, ['filled']);
 
       const orderSideMap = {};
       filledOrders.forEach(function (order) {
@@ -259,26 +293,26 @@ class OkexClient {
       // eslint-disable-next-line no-restricted-syntax
       for (const orderId of orderIds) {
         // eslint-disable-next-line no-await-in-loop
-        const rawTransactions = yield _this7.fetchTransactionDetails(instrumentId, orderId);
+        const rawTransactions = yield _this8.fetchTransactionDetails(instrumentId, orderId);
 
         // we only want transactions on the same side order was made rather than all transactions
         const transactions = rawTransactions.filter(function (transaction) {
           return orderSideMap[transaction.order_id] === transaction.side;
         });
         userTransactions = userTransactions.concat(transactions);
-        (0, _utils.delay)(_this7.RATE_LIMIT);
+        (0, _utils.delay)(_this8.RATE_LIMIT);
       }
       return userTransactions;
     })();
   }
 
   fetchInstruments() {
-    var _this8 = this;
+    var _this9 = this;
 
     return _asyncToGenerator(function* () {
       const options = {
         method: 'GET',
-        url: `${_this8.proxy}${BASE_URL}${INSTRUMENTS}`,
+        url: `${_this9.proxy}${BASE_URL}${INSTRUMENTS}`,
         headers: {
           'Content-Type': 'application/json'
         }
@@ -298,10 +332,10 @@ class OkexClient {
   }
 
   loadMarkets() {
-    var _this9 = this;
+    var _this10 = this;
 
     return _asyncToGenerator(function* () {
-      const instruments = yield _this9.fetchInstruments();
+      const instruments = yield _this10.fetchInstruments();
       const markets = {};
       instruments.forEach(function (instrument) {
         const base = _utils.COMMON_CURRENCIES[instrument.base_currency] ? _utils.COMMON_CURRENCIES[instrument.base_currency] : instrument.base_currency;
@@ -315,7 +349,7 @@ class OkexClient {
   }
 
   createOrder(instrumentId, orderRequest) {
-    var _this10 = this;
+    var _this11 = this;
 
     return _asyncToGenerator(function* () {
       const timestamp = (Date.now() / 1000).toString();
@@ -336,15 +370,15 @@ class OkexClient {
         data.notional = orderRequest.notional;
       }
 
-      const sign = _cryptoJs2.default.enc.Base64.stringify(_cryptoJs2.default.HmacSHA256(`${timestamp}${method}${ORDERS}${JSON.stringify(data)}`, _this10.secret));
+      const sign = _cryptoJs2.default.enc.Base64.stringify(_cryptoJs2.default.HmacSHA256(`${timestamp}${method}${ORDERS}${JSON.stringify(data)}`, _this11.secret));
       const options = {
         method,
-        url: `${_this10.proxy}${BASE_URL}${ORDERS}`,
+        url: `${_this11.proxy}${BASE_URL}${ORDERS}`,
         headers: {
-          'OK-ACCESS-KEY': _this10.apiKey,
+          'OK-ACCESS-KEY': _this11.apiKey,
           'OK-ACCESS-SIGN': sign,
           'OK-ACCESS-TIMESTAMP': timestamp,
-          'OK-ACCESS-PASSPHRASE': _this10.password,
+          'OK-ACCESS-PASSPHRASE': _this11.password,
           'Content-Type': 'application/json'
         },
         data
@@ -360,7 +394,7 @@ class OkexClient {
   }
 
   cancelOrder(orderId, instrumentId) {
-    var _this11 = this;
+    var _this12 = this;
 
     return _asyncToGenerator(function* () {
       const timestamp = (Date.now() / 1000).toString();
@@ -368,15 +402,15 @@ class OkexClient {
 
       const data = { instrument_id: instrumentId };
       const path = `${CANCEL_ORDERS}/${orderId}`;
-      const sign = _cryptoJs2.default.enc.Base64.stringify(_cryptoJs2.default.HmacSHA256(`${timestamp}${method}${path}${JSON.stringify(data)}`, _this11.secret));
+      const sign = _cryptoJs2.default.enc.Base64.stringify(_cryptoJs2.default.HmacSHA256(`${timestamp}${method}${path}${JSON.stringify(data)}`, _this12.secret));
       const options = {
         method,
-        url: `${_this11.proxy}${BASE_URL}${path}`,
+        url: `${_this12.proxy}${BASE_URL}${path}`,
         headers: {
-          'OK-ACCESS-KEY': _this11.apiKey,
+          'OK-ACCESS-KEY': _this12.apiKey,
           'OK-ACCESS-SIGN': sign,
           'OK-ACCESS-TIMESTAMP': timestamp,
-          'OK-ACCESS-PASSPHRASE': _this11.password,
+          'OK-ACCESS-PASSPHRASE': _this12.password,
           'Content-Type': 'application/json'
         },
         data
@@ -392,12 +426,12 @@ class OkexClient {
   }
 
   fetchOHLCV(instrumentId, interval, start, end) {
-    var _this12 = this;
+    var _this13 = this;
 
     return _asyncToGenerator(function* () {
       const options = {
         method: 'GET',
-        url: `${_this12.proxy}${BASE_URL}${INSTRUMENTS}/${instrumentId}/candles`,
+        url: `${_this13.proxy}${BASE_URL}${INSTRUMENTS}/${instrumentId}/candles`,
         headers: {
           'Content-Type': 'application/json'
         },

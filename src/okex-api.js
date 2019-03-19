@@ -24,12 +24,12 @@ class OkexClient {
     this.RATE_LIMIT = 100;
   }
 
-  static updateCurrencies(balances) {
-    return balances.map((balance) => {
-      if (COMMON_CURRENCIES[balance.currency]) {
-        return Object.assign(balance, { currency: COMMON_CURRENCIES[balance.currency] });
+  static updateCurrencies(objects) {
+    return objects.map((object) => {
+      if (COMMON_CURRENCIES[object.currency]) {
+        return Object.assign(object, { currency: COMMON_CURRENCIES[object.currency] });
       }
-      return balance;
+      return object;
     });
   }
 
@@ -378,7 +378,7 @@ class OkexClient {
 
     const response = await axios(options);
     if (response.status === 200) {
-      return response.data;
+      return OkexClient.updateCurrencies(response.data);
     }
     console.error(`Status=${response.status} fetching deposit history from ${EXCHANGE} because:`, response.data);
     return [];
@@ -404,7 +404,7 @@ class OkexClient {
 
     const response = await axios(options);
     if (response.status === 200) {
-      return response.data;
+      return OkexClient.updateCurrencies(response.data);
     }
     console.error(`Status=${response.status} fetching deposit history from ${EXCHANGE} because:`, response.data);
     return [];

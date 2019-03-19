@@ -12,6 +12,8 @@ const INSTRUMENTS = '/api/spot/v3/instruments';
 const ORDERS = '/api/spot/v3/orders';
 const CANCEL_ORDERS = '/api/spot/v3/cancel_orders';
 const TRANSACTION_DETAILS = '/api/spot/v3/fills';
+const DEPOSIT_HISTORY = '/api/account/v3/deposit/history';
+const WITHDRAWAL_HISTORY = '/api/account/v3/withdrawal/history';
 
 class OkexClient {
   constructor(userConfig = {}) {
@@ -354,6 +356,58 @@ class OkexClient {
     }
     console.error(`Status=${response.status} cancelling order from ${EXCHANGE} because:`, response.data);
     return { result: false };
+  }
+
+  async fetchDeposits() {
+    const timestamp = (Date.now() / 1000).toString();
+    const method = 'GET';
+
+    const path = DEPOSIT_HISTORY;
+    const sign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(`${timestamp}${method}${path}`, this.secret));
+    const options = {
+      method,
+      url: `${this.proxy}${BASE_URL}${path}`,
+      headers: {
+        'OK-ACCESS-KEY': this.apiKey,
+        'OK-ACCESS-SIGN': sign,
+        'OK-ACCESS-TIMESTAMP': timestamp,
+        'OK-ACCESS-PASSPHRASE': this.password,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    const response = await axios(options);
+    if (response.status === 200) {
+      return response.data;
+    }
+    console.error(`Status=${response.status} fetching deposit history from ${EXCHANGE} because:`, response.data);
+    return [];
+  }
+
+  async fetchWithdrawals() {
+    const timestamp = (Date.now() / 1000).toString();
+    const method = 'GET';
+
+    const path = WITHDRAWAL_HISTORY;
+    const sign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(`${timestamp}${method}${path}`, this.secret));
+    const options = {
+      method,
+      url: `${this.proxy}${BASE_URL}${path}`,
+      headers: {
+        'OK-ACCESS-KEY': this.apiKey,
+        'OK-ACCESS-SIGN': sign,
+        'OK-ACCESS-TIMESTAMP': timestamp,
+        'OK-ACCESS-PASSPHRASE': this.password,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    const response = await axios(options);
+    if (response.status === 200) {
+      return response.data;
+    }
+    console.error(`Status=${response.status} fetching deposit history from ${EXCHANGE} because:`, response.data);
+    return [];
   }
 
   async fetchOHLCV(instrumentId, interval, start, end) {

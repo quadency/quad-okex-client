@@ -28,6 +28,8 @@ const INSTRUMENTS = '/api/spot/v3/instruments';
 const ORDERS = '/api/spot/v3/orders';
 const CANCEL_ORDERS = '/api/spot/v3/cancel_orders';
 const TRANSACTION_DETAILS = '/api/spot/v3/fills';
+const DEPOSIT_HISTORY = '/api/account/v3/deposit/history';
+const WITHDRAWAL_HISTORY = '/api/account/v3/withdrawal/history';
 
 class OkexClient {
   constructor(userConfig = {}) {
@@ -425,13 +427,73 @@ class OkexClient {
     })();
   }
 
-  fetchOHLCV(instrumentId, interval, start, end) {
+  fetchDeposits() {
     var _this13 = this;
+
+    return _asyncToGenerator(function* () {
+      const timestamp = (Date.now() / 1000).toString();
+      const method = 'GET';
+
+      const path = DEPOSIT_HISTORY;
+      const sign = _cryptoJs2.default.enc.Base64.stringify(_cryptoJs2.default.HmacSHA256(`${timestamp}${method}${path}`, _this13.secret));
+      const options = {
+        method,
+        url: `${_this13.proxy}${BASE_URL}${path}`,
+        headers: {
+          'OK-ACCESS-KEY': _this13.apiKey,
+          'OK-ACCESS-SIGN': sign,
+          'OK-ACCESS-TIMESTAMP': timestamp,
+          'OK-ACCESS-PASSPHRASE': _this13.password,
+          'Content-Type': 'application/json'
+        }
+      };
+
+      const response = yield (0, _axios2.default)(options);
+      if (response.status === 200) {
+        return response.data;
+      }
+      console.error(`Status=${response.status} fetching deposit history from ${EXCHANGE} because:`, response.data);
+      return [];
+    })();
+  }
+
+  fetchWithdrawals() {
+    var _this14 = this;
+
+    return _asyncToGenerator(function* () {
+      const timestamp = (Date.now() / 1000).toString();
+      const method = 'GET';
+
+      const path = WITHDRAWAL_HISTORY;
+      const sign = _cryptoJs2.default.enc.Base64.stringify(_cryptoJs2.default.HmacSHA256(`${timestamp}${method}${path}`, _this14.secret));
+      const options = {
+        method,
+        url: `${_this14.proxy}${BASE_URL}${path}`,
+        headers: {
+          'OK-ACCESS-KEY': _this14.apiKey,
+          'OK-ACCESS-SIGN': sign,
+          'OK-ACCESS-TIMESTAMP': timestamp,
+          'OK-ACCESS-PASSPHRASE': _this14.password,
+          'Content-Type': 'application/json'
+        }
+      };
+
+      const response = yield (0, _axios2.default)(options);
+      if (response.status === 200) {
+        return response.data;
+      }
+      console.error(`Status=${response.status} fetching deposit history from ${EXCHANGE} because:`, response.data);
+      return [];
+    })();
+  }
+
+  fetchOHLCV(instrumentId, interval, start, end) {
+    var _this15 = this;
 
     return _asyncToGenerator(function* () {
       const options = {
         method: 'GET',
-        url: `${_this13.proxy}${BASE_URL}${INSTRUMENTS}/${instrumentId}/candles`,
+        url: `${_this15.proxy}${BASE_URL}${INSTRUMENTS}/${instrumentId}/candles`,
         headers: {
           'Content-Type': 'application/json'
         },

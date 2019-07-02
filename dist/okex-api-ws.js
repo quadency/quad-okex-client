@@ -116,6 +116,11 @@ class OkexWebsocketClient {
     socket.onmessage = message => {
       if (typeof message !== 'string') {
         const payload = _pako2.default.inflateRaw(message.data, { to: 'string' });
+        if (!payload) {
+          console.log('empty payload, skipping...');
+          return;
+        }
+
         const payloadObj = JSON.parse(payload);
 
         if (Array.isArray(payloadObj)) {

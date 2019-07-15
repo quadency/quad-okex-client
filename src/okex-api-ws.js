@@ -273,41 +273,6 @@ class OkexWebsocketClient {
     });
   }
 
-  // subscribeDepths(instrumentIds, callback) {
-  //   if (!instrumentIds.length) {
-  //     throw new Error('must provide instrument ids');
-  //   }
-  //   const subscriptions = instrumentIds.map((instrumentId) => {
-  //     const [base, quote] = instrumentId.split('-');
-  //     return {
-  //       event: 'addChannel',
-  //       parameters: {
-  //         base, binary: '1', product: 'spot', quote, type: 'depth',
-  //       },
-  //     };
-  //   });
-  //   return this.subscribe(subscriptions, (payloadObj) => {
-  //     const { channel, type, data } = payloadObj;
-
-  //     if (channel === 'addChannel') {
-  //       if (data.result) {
-  //         console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to order depth base=${payloadObj.base} quote=${payloadObj.quote}`);
-  //       }
-  //       return;
-  //     }
-
-  //     if (type === 'depth') {
-  //       const { base, quote } = payloadObj;
-  //       const newBase = COMMON_CURRENCIES[base] ? COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
-  //       const newQuote = COMMON_CURRENCIES[quote] ? COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
-  //       const symbol = `${newBase}-${newQuote}`;
-  //       const callbackPayload = Object.assign({ symbol }, data);
-  //       callbackPayload.type = data.init ? 'SNAPSHOT' : 'DELTA';
-  //       callback(callbackPayload);
-  //     }
-  //   });
-  // }
-
   subscribeTrades(instrumentIds, callback) {
     if (!instrumentIds.length) {
       throw new Error('must provide instrument ids');

@@ -229,7 +229,7 @@ class OkexWebsocketClient {
     };
 
     return this.subscribe(subscriptions, (payloadObj) => {
-      if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel === CHANNEL) {
+      if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
         console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
         return;
       }
@@ -244,39 +244,69 @@ class OkexWebsocketClient {
   }
 
   subscribeDepths(instrumentIds, callback) {
+    const CHANNEL = CHANNELS.DEPTH;
+
     if (!instrumentIds.length) {
       throw new Error('must provide instrument ids');
     }
-    const subscriptions = instrumentIds.map((instrumentId) => {
-      const [base, quote] = instrumentId.split('-');
-      return {
-        event: 'addChannel',
-        parameters: {
-          base, binary: '1', product: 'spot', quote, type: 'depth',
-        },
-      };
-    });
-    return this.subscribe(subscriptions, (payloadObj) => {
-      const { channel, type, data } = payloadObj;
 
-      if (channel === 'addChannel') {
-        if (data.result) {
-          console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to order depth base=${payloadObj.base} quote=${payloadObj.quote}`);
-        }
+    const subscriptions = {
+      op: 'subscribe',
+      args: instrumentIds.map(instrumentId => `${CHANNEL}:${instrumentId}`),
+    };
+
+    return this.subscribe(subscriptions, (payloadObj) => {
+      if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
+        console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
         return;
       }
 
-      if (type === 'depth') {
-        const { base, quote } = payloadObj;
+      const { table, data } = payloadObj;
+      if (table === CHANNEL) {
+        const [callbackPayload] = data;
+        const [base, quote] = callbackPayload.instrument_id.split('-');
         const newBase = COMMON_CURRENCIES[base] ? COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
         const newQuote = COMMON_CURRENCIES[quote] ? COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
-        const symbol = `${newBase}-${newQuote}`;
-        const callbackPayload = Object.assign({ symbol }, data);
-        callbackPayload.type = data.init ? 'SNAPSHOT' : 'DELTA';
+        data.instrument_id = `${newBase}-${newQuote}`;
         callback(callbackPayload);
       }
     });
   }
+
+  // subscribeDepths(instrumentIds, callback) {
+  //   if (!instrumentIds.length) {
+  //     throw new Error('must provide instrument ids');
+  //   }
+  //   const subscriptions = instrumentIds.map((instrumentId) => {
+  //     const [base, quote] = instrumentId.split('-');
+  //     return {
+  //       event: 'addChannel',
+  //       parameters: {
+  //         base, binary: '1', product: 'spot', quote, type: 'depth',
+  //       },
+  //     };
+  //   });
+  //   return this.subscribe(subscriptions, (payloadObj) => {
+  //     const { channel, type, data } = payloadObj;
+
+  //     if (channel === 'addChannel') {
+  //       if (data.result) {
+  //         console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to order depth base=${payloadObj.base} quote=${payloadObj.quote}`);
+  //       }
+  //       return;
+  //     }
+
+  //     if (type === 'depth') {
+  //       const { base, quote } = payloadObj;
+  //       const newBase = COMMON_CURRENCIES[base] ? COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
+  //       const newQuote = COMMON_CURRENCIES[quote] ? COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
+  //       const symbol = `${newBase}-${newQuote}`;
+  //       const callbackPayload = Object.assign({ symbol }, data);
+  //       callbackPayload.type = data.init ? 'SNAPSHOT' : 'DELTA';
+  //       callback(callbackPayload);
+  //     }
+  //   });
+  // }
 
   subscribeTrades(instrumentIds, callback) {
     if (!instrumentIds.length) {

@@ -20,7 +20,7 @@ var _utils = require('./utils');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-const WEBSOCKET_URI = 'wss://real.okex.com:10441/websocket';
+const WEBSOCKET_URI = 'wss://real.okex.com:10442/ws/v3';
 const EXCHANGE = 'OKEX';
 
 class OkexWebsocketClient {
@@ -224,113 +224,99 @@ class OkexWebsocketClient {
 
   static updateTickerCurrencies(tick) {
     const updatedTick = tick;
-    const [base, quote] = tick.symbol.split('_');
+    const [base, quote] = tick.instrument_id.split('-');
 
     const newBase = _utils.COMMON_CURRENCIES[base] ? _utils.COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
     const newQuote = _utils.COMMON_CURRENCIES[quote] ? _utils.COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
     const newSymbol = `${newBase}-${newQuote}`;
-    updatedTick.symbol = newSymbol;
+    updatedTick.instrument_id = newSymbol;
     return updatedTick;
   }
 
   subscribeTickers(instrumentIds, callback) {
+    const CHANNEL = _utils.CHANNELS.TICKER;
+
     if (!instrumentIds.length) {
       throw new Error('must provide instrument ids');
     }
 
-    const subscriptions = instrumentIds.map(instrumentId => {
-      const [base, quote] = instrumentId.split('-');
-      return {
-        event: 'addChannel',
-        parameters: {
-          base, binary: '1', product: 'spot', quote, type: 'ticker'
-        }
-      };
-    });
+    const subscriptions = {
+      op: 'subscribe',
+      args: instrumentIds.map(instrumentId => `${CHANNEL}:${instrumentId}`)
+    };
+
     return this.subscribe(subscriptions, payloadObj => {
-      const { channel, type, data } = payloadObj;
-      if (channel === 'addChannel') {
-        if (data.result) {
-          console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ticker base=${payloadObj.base} quote=${payloadObj.quote}`);
-        }
+      if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
+        console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
         return;
       }
-      if (type === 'ticker') {
-        const callbackPayload = OkexWebsocketClient.updateTickerCurrencies(data);
+
+      const { table, data } = payloadObj;
+      if (table === CHANNEL) {
+        const [tick] = data;
+        const callbackPayload = OkexWebsocketClient.updateTickerCurrencies(tick);
         callback(callbackPayload);
       }
     });
   }
 
   subscribeDepths(instrumentIds, callback) {
+    const CHANNEL = _utils.CHANNELS.DEPTH;
+
     if (!instrumentIds.length) {
       throw new Error('must provide instrument ids');
     }
-    const subscriptions = instrumentIds.map(instrumentId => {
-      const [base, quote] = instrumentId.split('-');
-      return {
-        event: 'addChannel',
-        parameters: {
-          base, binary: '1', product: 'spot', quote, type: 'depth'
-        }
-      };
-    });
-    return this.subscribe(subscriptions, payloadObj => {
-      const { channel, type, data } = payloadObj;
 
-      if (channel === 'addChannel') {
-        if (data.result) {
-          console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to order depth base=${payloadObj.base} quote=${payloadObj.quote}`);
-        }
+    const subscriptions = {
+      op: 'subscribe',
+      args: instrumentIds.map(instrumentId => `${CHANNEL}:${instrumentId}`)
+    };
+
+    return this.subscribe(subscriptions, payloadObj => {
+      if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
+        console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
         return;
       }
 
-      if (type === 'depth') {
-        const { base, quote } = payloadObj;
+      const { table, data } = payloadObj;
+      if (table === CHANNEL) {
+        const [callbackPayload] = data;
+        const [base, quote] = callbackPayload.instrument_id.split('-');
         const newBase = _utils.COMMON_CURRENCIES[base] ? _utils.COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
         const newQuote = _utils.COMMON_CURRENCIES[quote] ? _utils.COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
-        const symbol = `${newBase}-${newQuote}`;
-        const callbackPayload = Object.assign({ symbol }, data);
-        callbackPayload.type = data.init ? 'SNAPSHOT' : 'DELTA';
+        data.instrument_id = `${newBase}-${newQuote}`;
         callback(callbackPayload);
       }
     });
   }
 
   subscribeTrades(instrumentIds, callback) {
+    const CHANNEL = _utils.CHANNELS.TRADE;
+
     if (!instrumentIds.length) {
       throw new Error('must provide instrument ids');
     }
-    const subscriptions = instrumentIds.map(instrumentId => {
-      const [base, quote] = instrumentId.split('-');
-      return {
-        event: 'addChannel',
-        parameters: {
-          base, binary: '1', product: 'spot', quote, type: 'deal'
-        }
-      };
-    });
-    return this.subscribe(subscriptions, payloadObj => {
-      const { channel, type, data } = payloadObj;
 
-      if (channel === 'addChannel') {
-        if (data.result) {
-          console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to trades base=${payloadObj.base} quote=${payloadObj.quote}`);
-        }
+    const subscriptions = {
+      op: 'subscribe',
+      args: instrumentIds.map(instrumentId => `${CHANNEL}:${instrumentId}`)
+    };
+
+    return this.subscribe(subscriptions, payloadObj => {
+      if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
+        console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
         return;
       }
 
-      if (type === 'deal') {
-        const { base, quote } = payloadObj;
-        const newBase = _utils.COMMON_CURRENCIES[base] ? _utils.COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
-        const newQuote = _utils.COMMON_CURRENCIES[quote] ? _utils.COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
-        const symbol = `${newBase}-${newQuote}`;
-
-        data.forEach(trade => {
-          const callbackPayload = Object.assign({ symbol }, trade);
-          callbackPayload.side = OkexWebsocketClient.getOrderSide(trade.side);
-          callback(callbackPayload);
+      const { table, data } = payloadObj;
+      if (table === CHANNEL) {
+        const callbackPayload = data.map(trade => {
+          const [base, quote] = trade.instrument_id.split('-');
+          const newBase = _utils.COMMON_CURRENCIES[base] ? _utils.COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
+          const newQuote = _utils.COMMON_CURRENCIES[quote] ? _utils.COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
+          return Object.assign(trade, { instrument_id: `${newBase}-${newQuote}` });
         });
+        callback(callbackPayload);
       }
     });
   }

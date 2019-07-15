@@ -274,39 +274,32 @@ class OkexWebsocketClient {
   }
 
   subscribeTrades(instrumentIds, callback) {
+    const CHANNEL = CHANNELS.TRADE;
+
     if (!instrumentIds.length) {
       throw new Error('must provide instrument ids');
     }
-    const subscriptions = instrumentIds.map((instrumentId) => {
-      const [base, quote] = instrumentId.split('-');
-      return {
-        event: 'addChannel',
-        parameters: {
-          base, binary: '1', product: 'spot', quote, type: 'deal',
-        },
-      };
-    });
-    return this.subscribe(subscriptions, (payloadObj) => {
-      const { channel, type, data } = payloadObj;
 
-      if (channel === 'addChannel') {
-        if (data.result) {
-          console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to trades base=${payloadObj.base} quote=${payloadObj.quote}`);
-        }
+    const subscriptions = {
+      op: 'subscribe',
+      args: instrumentIds.map(instrumentId => `${CHANNEL}:${instrumentId}`),
+    };
+
+    return this.subscribe(subscriptions, (payloadObj) => {
+      if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
+        console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
         return;
       }
 
-      if (type === 'deal') {
-        const { base, quote } = payloadObj;
-        const newBase = COMMON_CURRENCIES[base] ? COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
-        const newQuote = COMMON_CURRENCIES[quote] ? COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
-        const symbol = `${newBase}-${newQuote}`;
-
-        data.forEach((trade) => {
-          const callbackPayload = Object.assign({ symbol }, trade);
-          callbackPayload.side = OkexWebsocketClient.getOrderSide(trade.side);
-          callback(callbackPayload);
+      const { table, data } = payloadObj;
+      if (table === CHANNEL) {
+        const callbackPayload = data.map((trade) => {
+          const [base, quote] = trade.instrument_id.split('-');
+          const newBase = COMMON_CURRENCIES[base] ? COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
+          const newQuote = COMMON_CURRENCIES[quote] ? COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
+          return Object.assign(trade, { instrument_id: `${newBase}-${newQuote}` });
         });
+        callback(callbackPayload);
       }
     });
   }

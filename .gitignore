@@ -18,3 +18,5 @@ node_modules
 .idea
 # ENV var
 .env
+
+src/debug.js

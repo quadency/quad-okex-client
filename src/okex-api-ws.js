@@ -147,41 +147,36 @@ class OkexWebsocketClient {
   }
 
   static updateBalanceCurrencies(balance) {
-    const formattedBalance = { free: {}, freezed: {} };
-    Object.keys(balance.free).forEach((coin) => {
-      if (COMMON_CURRENCIES[coin.toUpperCase()]) {
-        formattedBalance.free[COMMON_CURRENCIES[coin.toUpperCase()]] = balance.free[coin];
-        return;
-      }
-      formattedBalance.free[coin.toUpperCase()] = balance.free[coin];
-    });
-
-    Object.keys(balance.freezed).forEach((coin) => {
-      if (COMMON_CURRENCIES[coin.toUpperCase()]) {
-        formattedBalance.freezed[COMMON_CURRENCIES[coin.toUpperCase()]] = balance.freezed[coin];
-        return;
-      }
-      formattedBalance.freezed[coin.toUpperCase()] = balance.freezed[coin];
-    });
+    const formattedBalance = balance;
+    if (COMMON_CURRENCIES[balance.currency.toUpperCase()]) {
+      formattedBalance.currency = COMMON_CURRENCIES[balance.currency.toUpperCase()];
+    }
     return formattedBalance;
   }
 
-  subscribeBalance(callback) {
-    const subscription = { event: 'addChannel', parameters: { binary: '1', type: 'spot_order_all' } };
-    return this.subscribe(subscription, (payloadObj) => {
-      const { channel, data } = payloadObj;
-      if (channel) {
-        if (channel === 'addChannel') {
-          if (data.result) {
-            console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} user subscribed to balances`);
-          }
-          return;
-        }
+  subscribeBalance(coins, callback) {
+    const CHANNEL = CHANNELS.ACCOUNT;
 
-        if (channel.startsWith('ok_sub_spot_') && channel.endsWith('_balance')) {
-          const callbackPayload = OkexWebsocketClient.updateBalanceCurrencies(payloadObj.data.info);
-          callback(callbackPayload);
-        }
+    if (!coins.length) {
+      throw new Error('must provide coins');
+    }
+
+    const subscription = {
+      op: 'subscribe',
+      args: coins.map(coin => `${CHANNEL}:${coin}`),
+    };
+
+    this.subscribe(subscription, (payloadObj) => {
+      if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
+        console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
+        return;
+      }
+
+      const { table, data } = payloadObj;
+      if (table === CHANNEL) {
+        const [balance] = data;
+        const callbackPayload = OkexWebsocketClient.updateBalanceCurrencies(balance);
+        callback(callbackPayload);
       }
     });
   }

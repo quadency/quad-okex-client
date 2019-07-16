@@ -139,7 +139,7 @@ class OkexWebsocketClient {
       if (table === CHANNEL) {
         const [callbackPayload] = data;
         callbackPayload.type = callbackPayload.type.toUpperCase();
-        callbackPayload.status = OkexWebsocketClient.getOrderStatus(callbackPayload.state);
+        callbackPayload.status = OkexWebsocketClient.getOrderStatus(parseFloat(callbackPayload.state));
         callbackPayload.side = callbackPayload.side.toUpperCase();
         callback(callbackPayload);
       }

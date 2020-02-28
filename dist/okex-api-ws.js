@@ -119,7 +119,7 @@ class OkexWebsocketClient {
     };
 
     socket.onerror = error => {
-      console.log(`[correlationId=${this.correlationId}] error with ${EXCHANGE} connection because`, error);
+      console.log(`[correlationId=${this.correlationId}] error with ${EXCHANGE} connection because`, JSON.stringify(error));
 
       // reconnect if error
       this.subscribe(subscription, callback);

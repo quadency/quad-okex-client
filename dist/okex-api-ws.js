@@ -20,7 +20,7 @@ var _utils = require('./utils');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-const WEBSOCKET_URI = 'wss://real.okex.com:10442/ws/v3';
+const WEBSOCKET_URI = 'wss://real.okex.com:8443/ws/v3';
 const EXCHANGE = 'OKEX';
 
 class OkexWebsocketClient {

@@ -4,7 +4,7 @@ import CryptoJS from 'crypto-js';
 import { COMMON_CURRENCIES, CHANNELS } from './utils';
 
 
-const WEBSOCKET_URI = 'wss://real.okex.com:10442/ws/v3';
+const WEBSOCKET_URI = 'wss://real.okex.com:8443/ws/v3';
 const EXCHANGE = 'OKEX';
 
 

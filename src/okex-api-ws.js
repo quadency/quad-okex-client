@@ -56,7 +56,7 @@ class OkexWebsocketClient {
     }
   }
 
-  subscribe(subscription, callback) {
+  subscribe(subscription, callback, callbackOnClose) {
     const socket = new WebSocket(WEBSOCKET_URI);
     let pingInterval;
 
@@ -106,13 +106,17 @@ class OkexWebsocketClient {
     socket.onclose = () => {
       console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} connection closed`);
       clearInterval(pingInterval);
+
+      if (callbackOnClose) {
+        callbackOnClose();
+      }
     };
 
     socket.onerror = (error) => {
       console.log(`[correlationId=${this.correlationId}] error with ${EXCHANGE} connection because`, JSON.stringify(error));
 
       // reconnect if error
-      this.subscribe(subscription, callback);
+      this.subscribe(subscription, callback, callbackOnClose);
     };
     return () => { socket.close(); };
   }
@@ -219,7 +223,7 @@ class OkexWebsocketClient {
     });
   }
 
-  subscribeDepths(instrumentIds, callback) {
+  subscribeDepths(instrumentIds, callback, callbackOnClose) {
     const CHANNEL = CHANNELS.DEPTH;
 
     if (!instrumentIds.length) {
@@ -246,7 +250,7 @@ class OkexWebsocketClient {
         data.instrument_id = `${newBase}-${newQuote}`;
         callback(callbackPayload);
       }
-    });
+    }, callbackOnClose);
   }
 
   subscribeTrades(instrumentIds, callback) {

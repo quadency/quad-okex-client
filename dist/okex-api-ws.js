@@ -22,6 +22,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 const WEBSOCKET_URI = 'wss://real.okex.com:8443/ws/v3';
 const EXCHANGE = 'OKEX';
+const SOCKET_CLOSED = 'SOCKET_CLOSED';
 
 class OkexWebsocketClient {
   constructor(correlationId, userConfig = {}) {
@@ -116,13 +117,12 @@ class OkexWebsocketClient {
     socket.onclose = () => {
       console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} connection closed`);
       clearInterval(pingInterval);
+      callback(SOCKET_CLOSED);
     };
 
     socket.onerror = error => {
-      console.log(`[correlationId=${this.correlationId}] error with ${EXCHANGE} connection because`, JSON.stringify(error));
-
-      // reconnect if error
-      this.subscribe(subscription, callback);
+      console.log(`[correlationId=${this.correlationId}] error with ${EXCHANGE} connection because ${error}`);
+      socket.close();
     };
     return () => {
       socket.close();
@@ -142,6 +142,11 @@ class OkexWebsocketClient {
     };
 
     this.subscribe(subscriptions, payloadObj => {
+      if (payloadObj === SOCKET_CLOSED) {
+        callback(SOCKET_CLOSED);
+        return;
+      }
+
       if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
         console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
         return;
@@ -244,6 +249,11 @@ class OkexWebsocketClient {
     };
 
     return this.subscribe(subscriptions, payloadObj => {
+      if (payloadObj === SOCKET_CLOSED) {
+        callback(SOCKET_CLOSED);
+        return;
+      }
+
       if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
         console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
         return;

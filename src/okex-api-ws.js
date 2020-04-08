@@ -171,6 +171,11 @@ class OkexWebsocketClient {
     };
 
     this.subscribe(subscription, (payloadObj) => {
+      if (payloadObj === SOCKET_CLOSED) {
+        callback(SOCKET_CLOSED);
+        return;
+      }
+
       if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
         console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
         return;
@@ -209,6 +214,11 @@ class OkexWebsocketClient {
     };
 
     return this.subscribe(subscriptions, (payloadObj) => {
+      if (payloadObj === SOCKET_CLOSED) {
+        callback(SOCKET_CLOSED);
+        return;
+      }
+
       if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
         console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
         return;
@@ -271,6 +281,11 @@ class OkexWebsocketClient {
     };
 
     return this.subscribe(subscriptions, (payloadObj) => {
+      if (payloadObj === SOCKET_CLOSED) {
+        callback(SOCKET_CLOSED);
+        return;
+      }
+
       if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
         console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
         return;

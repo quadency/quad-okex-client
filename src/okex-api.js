@@ -250,6 +250,16 @@ class OkexClient {
 
       // we only want transactions on the same side order was made rather than all transactions
       const transactions = rawTransactions.filter(transaction => orderSideMap[transaction.order_id] === transaction.side);
+      transactions.forEach((trade) => {
+        if (parseFloat(trade.fee) === 0) {
+          rawTransactions.forEach((rowTrade) => {
+            if (trade.side === 'sell' && rowTrade.side === 'buy') {
+              // eslint-disable-next-line no-param-reassign
+              trade.fee = rowTrade.fee;
+            }
+          });
+        }
+      });
       userTransactions = userTransactions.concat(transactions);
       delay(this.RATE_LIMIT);
     }

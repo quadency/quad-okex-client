@@ -301,6 +301,16 @@ class OkexClient {
         const transactions = rawTransactions.filter(function (transaction) {
           return orderSideMap[transaction.order_id] === transaction.side;
         });
+        transactions.forEach(function (trade) {
+          if (parseFloat(trade.fee) === 0) {
+            rawTransactions.forEach(function (rowTrade) {
+              if (trade.side === 'sell' && rowTrade.side === 'buy') {
+                // eslint-disable-next-line no-param-reassign
+                trade.fee = rowTrade.fee;
+              }
+            });
+          }
+        });
         userTransactions = userTransactions.concat(transactions);
         (0, _utils.delay)(_this8.RATE_LIMIT);
       }

@@ -318,6 +318,10 @@ class OkexClient {
       data.notional = orderRequest.notional;
     }
 
+    if (orderRequest.client_oid) {
+      data.client_oid = orderRequest.client_oid;
+    }
+
     const sign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(`${timestamp}${method}${ORDERS}${JSON.stringify(data)}`, this.secret));
     const options = {
       method,

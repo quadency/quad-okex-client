@@ -318,21 +318,23 @@ class OkexClient {
       data.notional = orderRequest.notional;
     }
 
+    const sign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(`${timestamp}${method}${ORDERS}${JSON.stringify(data)}`, this.secret));
+    const headers = {
+      'OK-ACCESS-KEY': this.apiKey,
+      'OK-ACCESS-SIGN': sign,
+      'OK-ACCESS-TIMESTAMP': timestamp,
+      'OK-ACCESS-PASSPHRASE': this.password,
+      'Content-Type': 'application/json',
+    };
+
     if (orderRequest.client_oid) {
-      data.client_oid = orderRequest.client_oid;
+      headers.client_oid = orderRequest.client_oid;
     }
 
-    const sign = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(`${timestamp}${method}${ORDERS}${JSON.stringify(data)}`, this.secret));
     const options = {
       method,
       url: `${this.proxy}${BASE_URL}${ORDERS}`,
-      headers: {
-        'OK-ACCESS-KEY': this.apiKey,
-        'OK-ACCESS-SIGN': sign,
-        'OK-ACCESS-TIMESTAMP': timestamp,
-        'OK-ACCESS-PASSPHRASE': this.password,
-        'Content-Type': 'application/json',
-      },
+      headers,
       data,
     };
 

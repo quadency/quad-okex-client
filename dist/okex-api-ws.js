@@ -30,6 +30,7 @@ class OkexWebsocketClient {
       this[key] = userConfig[key];
     });
     this.correlationId = correlationId;
+    this.depthSocket = null;
   }
 
   /**
@@ -246,39 +247,92 @@ class OkexWebsocketClient {
     });
   }
 
+  unSubscribeDepths(instrumentIds) {
+    const CHANNEL = _utils.CHANNELS.DEPTH;
+    const unSubscription = {
+      op: 'unsubscribe',
+      args: instrumentIds.map(instrumentId => `${CHANNEL}:${instrumentId}`)
+    };
+    if (this.depthSocket && this.depthSocket.readyState === this.depthSocket.OPEN) {
+      this.depthSocket.send(JSON.stringify(unSubscription));
+    }
+  }
+
   subscribeDepths(instrumentIds, callback) {
     const CHANNEL = _utils.CHANNELS.DEPTH;
+    const subscription = {
+      op: 'subscribe',
+      args: instrumentIds.map(instrumentId => `${CHANNEL}:${instrumentId}`)
+    };
+
+    let pingInterval;
+
+    if (!this.depthSocket) {
+      this.depthSocket = new _ws2.default(WEBSOCKET_URI);
+    }
 
     if (!instrumentIds.length) {
       throw new Error('must provide instrument ids');
     }
 
-    const subscriptions = {
-      op: 'subscribe',
-      args: instrumentIds.map(instrumentId => `${CHANNEL}:${instrumentId}`)
+    this.depthSocket.onopen = () => {
+      console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} connection open`);
+      this.depthSocket.send(JSON.stringify(subscription));
+
+      pingInterval = setInterval(() => {
+        if (this.depthSocket.readyState === this.depthSocket.OPEN) {
+          const pingMessage = 'ping';
+          this.depthSocket.send(pingMessage);
+        }
+      }, 5000);
     };
 
-    return this.subscribe(subscriptions, payloadObj => {
-      if (payloadObj === SOCKET_CLOSED) {
-        callback(SOCKET_CLOSED);
-        return;
-      }
+    if (this.depthSocket && this.depthSocket.readyState === this.depthSocket.OPEN) {
+      this.depthSocket.send(JSON.stringify(subscription));
+    }
 
-      if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
-        console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
-        return;
-      }
+    this.depthSocket.onmessage = message => {
+      if (typeof message !== 'string') {
+        const payload = _pako2.default.inflateRaw(message.data, { to: 'string' });
+        if (!payload) {
+          console.log('empty payload, skipping...');
+          return;
+        }
 
-      const { table, data } = payloadObj;
-      if (table === CHANNEL) {
-        const [callbackPayload] = data;
-        const [base, quote] = callbackPayload.instrument_id.split('-');
-        const newBase = _utils.COMMON_CURRENCIES[base] ? _utils.COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
-        const newQuote = _utils.COMMON_CURRENCIES[quote] ? _utils.COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
-        data.instrument_id = `${newBase}-${newQuote}`;
-        callback(callbackPayload);
+        if (payload !== 'pong') {
+          const payloadObj = JSON.parse(payload);
+          if (payloadObj === SOCKET_CLOSED) {
+            callback(SOCKET_CLOSED);
+            return;
+          }
+
+          if (payloadObj.event && payloadObj.event === 'subscribe' && payloadObj.channel.split(':')[0] === CHANNEL) {
+            console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} subscribed to ${payloadObj.channel}`);
+            return;
+          }
+          const { table, data } = payloadObj;
+          if (table === CHANNEL) {
+            const [callbackPayload] = data;
+            const [base, quote] = callbackPayload.instrument_id.split('-');
+            const newBase = _utils.COMMON_CURRENCIES[base] ? _utils.COMMON_CURRENCIES[base].toUpperCase() : base.toUpperCase();
+            const newQuote = _utils.COMMON_CURRENCIES[quote] ? _utils.COMMON_CURRENCIES[quote].toUpperCase() : quote.toUpperCase();
+            callbackPayload.instrument_id = `${newBase}-${newQuote}`;
+            callback(callbackPayload);
+          }
+        }
       }
-    });
+    };
+
+    this.depthSocket.onclose = () => {
+      console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} connection closed`);
+      clearInterval(pingInterval);
+      callback(SOCKET_CLOSED);
+    };
+
+    this.depthSocket.onerror = error => {
+      console.log(`[correlationId=${this.correlationId}] error with ${EXCHANGE} connection because ${error}`);
+      this.depthSocket.close();
+    };
   }
 
   subscribeTrades(instrumentIds, callback) {

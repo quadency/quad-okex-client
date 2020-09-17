@@ -51,7 +51,7 @@ class OkexWebsocketClient {
           this.password,
           timestamp,
           sign,
-        ]
+        ],
       });
       socket.send(request);
     }

@@ -97,7 +97,7 @@ class OkexWebsocketClient {
       if (typeof message !== 'string') {
         const payload = _pako2.default.inflateRaw(message.data, { to: 'string' });
         if (!payload) {
-          console.log('empty payload, skipping');
+          console.log('empty payload, skipping...');
           return;
         }
 
@@ -122,7 +122,7 @@ class OkexWebsocketClient {
     };
 
     socket.onerror = error => {
-      console.log(`[correlationId=${this.correlationId}] ${EXCHANGE} connection closed because ${error}`);
+      console.log(`[correlationId=${this.correlationId}] error with ${EXCHANGE} connection because ${error}`);
       socket.close();
     };
 

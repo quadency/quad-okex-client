@@ -130,10 +130,8 @@ class OkexWebsocketClient {
   }
 
   subscribePublic(subscription, callback) {
-    if (this.publicSocket) {
-      if (this.publicSocket.readyState === this.publicSocket.OPEN) {
-        this.publicSocket.send(JSON.stringify(subscription));
-      }
+    if (this.publicSocket && this.publicSocket.readyState === this.publicSocket.OPEN) {
+      this.publicSocket.send(JSON.stringify(subscription));
     } else {
       this.publicSocket = this.initSocket(subscription, callback);
     }

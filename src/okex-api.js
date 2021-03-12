@@ -21,7 +21,7 @@ class OkexClient {
       this[key] = userConfig[key];
     });
     this.proxy = '';
-    this.RATE_LIMIT = 100;
+    this.RATE_LIMIT = 200;
   }
 
   static updateCurrencies(objects) {

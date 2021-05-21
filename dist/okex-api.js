@@ -110,6 +110,7 @@ class OkexClient {
         console.error(`Status=${response.status} fetching spot balances from ${EXCHANGE} because:`, response.data);
       } catch (err) {
         console.error(`Error fetching spot balances from ${EXCHANGE} because:`, err);
+        throw err;
       }
       return [];
     })();
@@ -203,6 +204,7 @@ class OkexClient {
         console.error(`Status=${response.status} fetching users trades from ${EXCHANGE} because:`, response.data);
       } catch (err) {
         console.error(`Error fetching users trades from ${EXCHANGE} because:`, err);
+        throw err;
       }
       return [];
     })();
